@@ -3,6 +3,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.linalg import svd
 
+# Data link:
+# https://archive.ics.uci.edu/ml/datasets/Blood+Transfusion+Service+Center
+
 # Read data
 filename = 'transfusion.data'
 df = pd.read_csv(filename)
@@ -35,8 +38,8 @@ Z = Y @ V
 
 # %% Plots
 # Data attributes to be plotted
-i = 0
-j = 1
+i = 1
+j = 2
 
 f = plt.figure()
 plt.title('NanoNose data')
