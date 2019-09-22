@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.linalg import svd
-from similarity import similarity
 import seaborn as sns
+from sklearn.preprocessing import OneHotEncoder
 
 # Data link:
 # https://archive.ics.uci.edu/ml/datasets/ecoli
@@ -31,8 +31,15 @@ y = np.array([classDict[cl] for cl in classLabels])
 
 C = len(classNames)
 
-N, M = X.shape
+N, M = X1.shape
 # %% PCA
+# Make 1-of-K-encoding
+#onehot_encoder = OneHotEncoder(sparse=False,categories='auto')
+#y_reshaped = y.reshape(len(y), 1)
+#onehot_encoded = onehot_encoder.fit_transform(y_reshaped)
+#X = np.concatenate((X,onehot_encoded),1)
+#N, M = X.shape
+
 # Subtract mean value from data
 Y = (X - np.ones((N,1))*X.mean(axis=0))
 
