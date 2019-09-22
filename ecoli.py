@@ -32,7 +32,7 @@ y = np.array([classDict[cl] for cl in classLabels])
 
 C = len(classNames)
 
-N, M = X1.shape
+N, M = X.shape
 # %% PCA
 
 # Make 1-of-K-encoding
@@ -117,7 +117,7 @@ legendStrs = ['PC'+str(e+1) for e in pcs]
 c = ['r','g','b']
 bw = .2
 r = np.arange(1,M+1)
-f5 = plt.figure()
+f5 = plt.figure(dpi = 300)
 for i in pcs:    
     plt.bar(r+i*bw, V[:,i], width=bw)
 plt.xticks(r+bw, attributeNames)
@@ -126,4 +126,5 @@ plt.ylabel('Component coefficients')
 plt.legend(legendStrs)
 plt.grid()
 plt.title('Ecoli: PCA Component Coefficients')
+f5.savefig('./figures/PCA_bar_plot.png', bbox_inches='tight')
 plt.show()
