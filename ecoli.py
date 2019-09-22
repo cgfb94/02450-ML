@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.linalg import svd
 import seaborn as sns
 from sklearn.preprocessing import OneHotEncoder
+plt.style.use('seaborn')
 
 # Data link:
 # https://archive.ics.uci.edu/ml/datasets/ecoli
@@ -60,8 +61,6 @@ ax = sns.heatmap(corr,vmin=-1, vmax=1, center=0,square=True)
 plt.title('Variable Correlation')
 f1.savefig('./figures/correlation.png', bbox_inches='tight')
 plt.show()
-
-
     
 
 # %% Plots
