@@ -11,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 
 
 #%%
-data= pd.read_csv(r"C:\Users\callu\Desktop\ecoli.data", sep='\s+', header=None)
+data= pd.read_csv("ecoli.data", sep='\s+', header=None)
 #%%
 X = data.iloc[:,1:8].values
 X = StandardScaler().fit_transform(X)

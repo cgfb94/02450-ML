@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.linalg import svd
+from similarity import similarity
+import seaborn as sns
 
 # Data link:
 # https://archive.ics.uci.edu/ml/datasets/ecoli
@@ -43,6 +45,17 @@ rho = (S*S) / (S*S).sum()
 
 # Project the centered data onto principal component space
 Z = Y @ V
+# %% Correlation
+plt.figure(dpi=300)
+corr = df2.corr()
+ax = sns.heatmap(corr,vmin=-1, vmax=1, center=0,square=True)
+plt.title('Variable Correlation')
+plt.savefig('./figures/correlation.png', bbox_inches='tight')
+plt.show()
+
+
+    
+
 # %% Plots
 # Data attributes to be plotted
 i = 0
