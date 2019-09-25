@@ -65,21 +65,22 @@ plt.show()
 
 # %% Plots
 # Data attributes to be plotted
-i = 0
-j = 1
-
-f2 = plt.figure()
-plt.title('Ecoli data')
-
-for c in range(C):
-    # select indices belonging to class c:
-    class_mask = y==c
-    plt.plot(X[class_mask,i], X[class_mask,j], 'o',alpha=.3)
-
-plt.legend(classNames)
-plt.xlabel(attributeNames[i])
-plt.ylabel(attributeNames[j])
-plt.show()
+dpi = 75 # Sets dpi for plots
+#i = 0
+#j = 1
+#
+#f2 = plt.figure()
+#plt.title('Ecoli data')
+#
+#for c in range(C):
+#    # select indices belonging to class c:
+#    class_mask = y==c
+#    plt.plot(X[class_mask,i], X[class_mask,j], 'o',alpha=.3)
+#
+#plt.legend(classNames)
+#plt.xlabel(attributeNames[i])
+#plt.ylabel(attributeNames[j])
+#plt.show()
 
 # Plot variance explained
 threshold = 0.9
@@ -97,14 +98,16 @@ plt.show()
 # Plot PCA of the data
 i = 0
 j = 1
+color_map = ["b","g","lime","r","c","m","y","k"]
+markers = ['o','s','s','s','s','.','.','v']
 
-f4 = plt.figure(dpi=300)
+f4 = plt.figure(dpi=dpi)
 plt.title('Ecoli data: PCA')
 #Z = array(Z)
 for c in range(C):
     # select indices belonging to class c:
     class_mask = y==c
-    plt.plot(Z[class_mask,i], Z[class_mask,j], 'o', alpha=.5)
+    plt.plot(Z[class_mask,i], Z[class_mask,j], markers[c], alpha=.5,c=color_map[c])
 plt.legend(classNames)
 plt.xlabel('PC{0}'.format(i+1))
 plt.ylabel('PC{0}'.format(j+1))
@@ -117,7 +120,7 @@ legendStrs = ['PC'+str(e+1) for e in pcs]
 c = ['r','g','b']
 bw = .2
 r = np.arange(1,M+1)
-f5 = plt.figure(dpi = 300)
+f5 = plt.figure(dpi = dpi)
 for i in pcs:    
     plt.bar(r+i*bw, V[:,i], width=bw)
 plt.xticks(r+bw, attributeNames)
