@@ -21,9 +21,12 @@ cols = range(1,8)
 
 # Read data:
 X = raw_data2[:, :]
-sequence_name = raw_data[:,0] # Don't know if this attribute is useful at all
+sequence_name = raw_data[:,0] # Store names
 classLabels = raw_data[:,-1] # Class location site 
 
+# Set cutoff for binary attributes
+X[X[:,2] <= 0.5,2] = 0
+X[X[:,3] <= 0.5,2] = 0
 
 attributeNames = np.asarray(df.columns[cols])
 classNames = np.unique(classLabels)
@@ -34,13 +37,6 @@ C = len(classNames)
 
 N, M = X.shape
 # %% PCA
-
-# Make 1-of-K-encoding
-#onehot_encoder = OneHotEncoder(sparse=False,categories='auto')
-#y_reshaped = y.reshape(len(y), 1)
-#onehot_encoded = onehot_encoder.fit_transform(y_reshaped)
-#X = np.concatenate((X,onehot_encoded),1)
-#N, M = X.shape
 
 # Subtract mean value from data
 Y = (X - np.ones((N,1))*X.mean(axis=0))
@@ -53,34 +49,20 @@ V = V.T
 rho = (S*S) / (S*S).sum() 
 
 # Project the centered data onto principal component space
-Z = Y @ V
-# %% Correlation
-f1 = plt.figure(dpi=300)
-corr = df2.corr()
-ax = sns.heatmap(corr,vmin=-1, vmax=1, center=0,square=True)
-plt.title('Variable Correlation')
-f1.savefig('./figures/correlation.png', bbox_inches='tight')
-plt.show()
-    
+Z = Y @ V   
 
 # %% Plots
 # Data attributes to be plotted
 dpi = 75 # Sets dpi for plots
-#i = 0
-#j = 1
-#
-#f2 = plt.figure()
-#plt.title('Ecoli data')
-#
-#for c in range(C):
-#    # select indices belonging to class c:
-#    class_mask = y==c
-#    plt.plot(X[class_mask,i], X[class_mask,j], 'o',alpha=.3)
-#
-#plt.legend(classNames)
-#plt.xlabel(attributeNames[i])
-#plt.ylabel(attributeNames[j])
-#plt.show()
+save_plots = False
+
+# Correlation plot
+f1 = plt.figure(dpi=dpi)
+corr = df2.corr()
+ax = sns.heatmap(corr,vmin=-1, vmax=1, center=0,square=True)
+plt.title('Variable Correlation')
+f1.savefig('./figures/correlation.png', bbox_inches='tight') if save_plots else 0
+plt.show()
 
 # Plot variance explained
 threshold = 0.9
@@ -111,7 +93,7 @@ for c in range(C):
 plt.legend(classNames)
 plt.xlabel('PC{0}'.format(i+1))
 plt.ylabel('PC{0}'.format(j+1))
-f4.savefig('./figures/PC1_PC2_plot.png', bbox_inches='tight')
+f4.savefig('./figures/PC1_PC2_plot.png', bbox_inches='tight') if save_plots else 0
 plt.show()
 
 # Bar plot of PCA
@@ -129,5 +111,5 @@ plt.ylabel('Component coefficients')
 plt.legend(legendStrs)
 plt.grid()
 plt.title('Ecoli: PCA Component Coefficients')
-f5.savefig('./figures/PCA_bar_plot.png', bbox_inches='tight')
+f5.savefig('./figures/PCA_bar_plot.png', bbox_inches='tight') if save_plots else 0
 plt.show()
