@@ -24,10 +24,6 @@ X = raw_data2[:, :]
 sequence_name = raw_data[:,0] # Store names
 classLabels = raw_data[:,-1] # Class location site 
 
-# Set cutoff for binary attributes
-X[X[:,2] <= 0.5,2] = 0
-X[X[:,3] <= 0.5,2] = 0
-
 attributeNames = np.asarray(df.columns[cols])
 classNames = np.unique(classLabels)
 classDict = dict(zip(classNames,range(len(classNames))))
