@@ -9,7 +9,7 @@ plt.style.use('seaborn')
 # Data link:
 # https://archive.ics.uci.edu/ml/datasets/ecoli
 
-filename = 'ecoli.csv'
+filename = '../ecoli.csv'
 # Data fields
 fields = ['mcg', 'gvh','lip','chg','aac','alm1','alm2']
 df = pd.read_csv(filename)
