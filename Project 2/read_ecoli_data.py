@@ -34,3 +34,9 @@ y = np.array([classDict[cl] for cl in classLabels])
 C = len(classNames)
 
 N, M = X.shape
+
+# Make attribute names string array
+strs = ["" for x in range(M)]
+for i in range(M):
+    strs[i] = attributeNames[i]
+attributeNames = strs
