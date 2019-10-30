@@ -51,7 +51,6 @@ for train_index, test_index in CV.split(X):
         j+=1
             
     # Select optimal model for this cross validation
-#    s = np.argmin(Error_test2[:,k])
     s = np.argmin(Error_test2.mean(0))
     minTreeDebth = tc[s]
     print('\nOptimal tree debth: {0}\n'.format(minTreeDebth))
