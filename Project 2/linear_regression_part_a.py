@@ -80,15 +80,6 @@ train_err_vs_lambda = np.mean(train_error,axis=0)
 test_err_vs_lambda = np.mean(test_error,axis=0)
 mean_w_vs_lambda = np.squeeze(np.mean(w,axis=1))
 
-
-f = figure()
-title('Optimal lambda: 1e{0}'.format(np.log10(opt_lambda)))
-semilogx(lambdas,train_err_vs_lambda.T,'b.-',lambdas,test_err_vs_lambda.T,'r.-')
-xlabel('Regularization factor')
-ylabel('Squared error (crossvalidation)')
-legend(['Train error','Validation error'])
-grid()
-
 # The difference from last plot here is that opt_lamda is not written as a power of 10
 f = figure()
 title('Optimal lambda: {0}'.format(opt_lambda))
