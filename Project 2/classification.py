@@ -1,4 +1,4 @@
-from matplotlib.pyplot import figure, plot, xlabel, ylabel, show
+from matplotlib.pyplot import figure, plot, xlabel, ylabel, show, subplot, semilogx, title, grid, legend, suptitle, tight_layout
 import numpy as np
 from scipy.io import loadmat
 from sklearn.neighbors import KNeighborsClassifier
@@ -12,8 +12,8 @@ from read_ecoli_data import *
 # Set cross-validation parameters
 K1 = 10
 K2 = K1
-CV = model_selection.KFold(n_splits=K1,shuffle=True)
-CV2 = model_selection.KFold(n_splits=K2,shuffle=True)
+CV = model_selection.KFold(n_splits=K1,shuffle=True, random_state = 1)
+CV2 = model_selection.KFold(n_splits=K2,shuffle=True, random_state =1)
 
 
 # Initialize error and complexity control - LOGREG
@@ -71,7 +71,7 @@ for train_index, test_index in CV.split(X):
             
         # LOGISTICAL REGRESSION   
         for l in range(0,L_LOG):            
-            logreg = LogisticRegression(solver='lbfgs', multi_class='multinomial',max_iter = 100000, tol=1e-4, C=1/lambda_interval[l])
+            logreg = LogisticRegression(solver='lbfgs', multi_class='multinomial',max_iter = 100000, tol=1e-4, C=1/lambda_interval[l], random_state = 1)
             logreg.fit(X_train2,y_train2)
 
             y_test_est2 = logreg.predict(X_test2).T
@@ -100,10 +100,10 @@ for train_index, test_index in CV.split(X):
     opt_lambda[n] = lambda_interval[minArg]
     
     # Compute logistical regression with best lambda from inner fold
-    logreg = LogisticRegression(solver='lbfgs', multi_class='multinomial',max_iter = 100000, tol=1e-4, C=1/opt_lambda[n])
+    logreg = LogisticRegression(solver='lbfgs', multi_class='multinomial',max_iter = 100000, tol=1e-4, C=1/opt_lambda[n], random_state = 1)
     logreg.fit(X_train,y_train)
     y_est_LOG = logreg.predict(X_test).T
-    error_LOG[n] = np.sum(y_est_LOG != y_test) / len(y_test)
+    error_LOG[n] = np.sum(y_est_LOG != y_test) / len(y_test)    
     
     # BASELINE
     baseline_guess = np.argmax(np.bincount(y_train))
@@ -129,14 +129,29 @@ yhat = np.concatenate(yhat)
 
 print('Errors KNN:\tErrors baseline\tErrors LOGREG')
 for m in range(K1):   
-    print(' ',np.round(errors_KNN[m],2),'\t',np.round(errors_baseline[m],2),'\t',np.round(error_LOG[m],2))
+    print(' ',np.round(errors_KNN[m],2),'\t\t',np.round(errors_baseline[m],2),'\t\t',np.round(error_LOG[m],2))
     
-## Plot the classification error rate for last inner fold for KNN
-#figure()
-#plot(errors2_KNN.mean(0)*100)
-#xlabel('Number of neighbors')
-#ylabel('Classification error rate (%)')
-#show()
+    
+# PLOTS 
+dpi = 75 # Sets dpi for plots
+save_plots = False
+
+# Plot the classification error rate for last inner fold for KNN
+f = figure(dpi=dpi)
+
+subplot(2, 1, 1)
+plot(L_list,errors2_KNN.mean(0)*100,'-o')
+xlabel('Number of neighbors')
+ylabel('Classification error rate (%)')
+
+subplot(2, 1, 2)
+semilogx(lambda_interval, error2_LOG.mean(0)*100,'-or')
+xlabel('Regularization strength, $\log_{10}(\lambda)$')
+ylabel('Classification error rate (%)')
+
+tight_layout()
+show()
+f.savefig('./figures/inner_fold_classification.png', bbox_inches='tight') if save_plots else 0
 
 #%% Statistical evaluation Setup I
     
@@ -145,12 +160,15 @@ alpha = 0.05
 
 print('A : Baseline\nB : KNN')
 [thetahat, CI, p] = mcnemar(y_true, yhat[:,0], yhat[:,1], alpha=alpha)
+print('theta: ',np.round(thetahat,2),' CI: ',np.round(CI,2),' p: ',np.round(p,3))
 print('\n')
 print('A : Baseline\nB : Logistical Regression')
 [thetahat, CI, p] = mcnemar(y_true, yhat[:,0], yhat[:,2], alpha=alpha)
+print('theta: ',np.round(thetahat,2),' CI: ',np.round(CI,2),' p: ',np.round(p,3))
 print('\n')
 print('A : KNN\nB : Logistical Regression')
 [thetahat, CI, p] = mcnemar(y_true, yhat[:,1], yhat[:,2], alpha=alpha)
+print('theta: ',np.round(thetahat,2),' CI: ',np.round(CI,2),' p: ',np.round(p,3))
 
 
 #print("\ntheta = theta_A-theta_B point estimate", thetahat, " CI: ", CI, "p-value", p)

@@ -1,4 +1,4 @@
-from matplotlib.pylab import (figure, semilogx, loglog, xlabel, ylabel, legend, 
+from matplotlib.pylab import (figure, semilogx, loglog, xlabel, ylabel, legend, tight_layout, 
                            title, subplot, show, grid, plot)
 import numpy as np
 from scipy.io import loadmat
@@ -34,11 +34,12 @@ M = X.shape[1]
 ## Crossvalidation
 # Create crossvalidation partition for evaluation
 K = 10
-CV = model_selection.KFold(K, shuffle=True)
+CV = model_selection.KFold(K, shuffle=True,random_state = 1)
 
 
 # Values of lambda
 lambdas = np.power(10.,range(-1,7))
+lambdas = np.logspace(-2, 7, 50)
 #lambdas = np.arange(0.1,100,0.5)
 
 # Initialize data
@@ -80,23 +81,28 @@ train_err_vs_lambda = np.mean(train_error,axis=0)
 test_err_vs_lambda = np.mean(test_error,axis=0)
 mean_w_vs_lambda = np.squeeze(np.mean(w,axis=1))
 
+
+# PLOTS 
+dpi = 75 # Sets dpi for plots
+save_plots = False
+
 # The difference from last plot here is that opt_lamda is not written as a power of 10
 f = figure()
-title('Optimal lambda: {0}'.format(opt_lambda))
+title('Optimal lambda: {0}'.format(np.round(opt_lambda,3)))
 semilogx(lambdas,train_err_vs_lambda.T,'b.-',lambdas,test_err_vs_lambda.T,'r.-')
 xlabel('Regularization factor')
-ylabel('Squared error (crossvalidation)')
+ylabel('Estimated generalization error')
 legend(['Train error','Validation error'])
 grid()
+tight_layout()
+f.savefig('./figures/reg_part_a_error_vs_lambdas.png', bbox_inches='tight') if save_plots else 0
 
-f = figure()
+f2 = figure()
 semilogx(lambdas,mean_w_vs_lambda.T[:,1:],'.-') # Don't plot the bias term
 xlabel('Regularization factor')
 ylabel('Mean Coefficient Values')
 grid()
-# You can choose to display the legend, but it's omitted for a cleaner 
-# plot, since there are many attributes
-#legend(attributeNames[1:], loc='best')
+legend(attributeNames[1:], loc='best')
 
 
 print('Weights for best regularization parameter:')
