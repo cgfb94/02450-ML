@@ -1,5 +1,3 @@
-# exercise 8.1.2
-
 from matplotlib.pyplot import figure, plot, xlabel, ylabel, show
 import numpy as np
 from scipy.io import loadmat
@@ -7,6 +5,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from toolbox_02450 import rocplot, confmatplot
 from sklearn import model_selection
+
+# THIS CODE IS NOT RELEVANT FOR PROJET
+# IT IS MAINLY FOR TESTING IDEAS
+# THIS CODE IS NOT RELEVANT FOR PROJET
+# IT IS MAINLY FOR TESTING IDEAS
+# THIS CODE IS NOT RELEVANT FOR PROJET
+# IT IS MAINLY FOR TESTING IDEAS
 
 # Gets data
 from read_ecoli_data import *

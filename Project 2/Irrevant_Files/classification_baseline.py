@@ -4,6 +4,13 @@ from scipy.io import loadmat
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import model_selection
 
+# THIS CODE IS NOT RELEVANT FOR PROJET
+# IT IS MAINLY FOR TESTING IDEAS
+# THIS CODE IS NOT RELEVANT FOR PROJET
+# IT IS MAINLY FOR TESTING IDEAS
+# THIS CODE IS NOT RELEVANT FOR PROJET
+# IT IS MAINLY FOR TESTING IDEAS
+
 # Gets data
 from read_ecoli_data import *
 
