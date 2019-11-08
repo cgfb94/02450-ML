@@ -12,11 +12,14 @@ import seaborn as sns
 # Gets data
 from read_ecoli_data import *
 
+# Standardizes data matrix so each column has mean 0 and std 1
+X = (X - np.ones((N,1))*X.mean(0))/X.std(0)
+
 # Set cross-validation parameters
 K1 = 10
 K2 = K1
 CV = model_selection.KFold(n_splits=K1,shuffle=True, random_state = 1)
-CV2 = model_selection.KFold(n_splits=K2,shuffle=True, random_state =1)
+CV2 = model_selection.KFold(n_splits=K2,shuffle=True, random_state = 1)
 
 
 # Initialize error and complexity control - LOGREG

@@ -16,6 +16,9 @@ from sklearn import model_selection
 # Gets data
 from read_ecoli_data import *
 
+# Standardizes data matrix so each column has mean 0 and std 1
+X = (X - np.ones((N,1))*X.mean(0))/X.std(0)
+
 
 # Initialize training parameters
 lambda_interval = np.logspace(-8, 2, 50)

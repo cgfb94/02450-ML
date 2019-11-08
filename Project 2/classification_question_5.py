@@ -4,23 +4,30 @@ from scipy.io import loadmat
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import model_selection
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 from toolbox_02450 import mcnemar
 
 # Gets data
 from read_ecoli_data import *
 
-# Mean op optimal lambda found from last exercise
-lambda_opt = 0.06
+# Standardizes data matrix so each column has mean 0 and std 1
+X = (X - np.ones((N,1))*X.mean(0))/X.std(0)
 
+# Mean op optimal lambda found from last exercise
+lambda_opt = 1.29
+
+
+#K = 10
+#CV = model_selection.KFold(n_splits=K,shuffle=True, random_state = 1)
+#for train_index, test_index in CV.split(X):
+#    # extract training and test set for current CV fold
+#    X_train = X[train_index,:]
+#    y_train = y[train_index]
+#    X_test = X[test_index,:]
+#    y_test = y[test_index]
 
 K = 10
-CV = model_selection.KFold(n_splits=K,shuffle=True, random_state = 1)
-for train_index, test_index in CV.split(X):
-    # extract training and test set for current CV fold
-    X_train = X[train_index,:]
-    y_train = y[train_index]
-    X_test = X[test_index,:]
-    y_test = y[test_index]
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 1)
 
 
 
@@ -39,32 +46,30 @@ for i in range(len(classNames)):
 
 #%%
 # Select test value
-s = 18
-val = X_test[s:s+1,:]
-x = X_test[s,:]
 
+#index = 5
 
-a = logreg.coef_ @ x
-b = y_test[s]
+#x = X_test[index,:]
+x = X_test
 
-# Apply softmax
-c = np.exp(a)/np.sum(np.exp(a))
+# Weights
+w = logreg.coef_
 
-for i in range(len(classNames)):
-    print(np.round(c[i],2))
-print('Guess: ',np.argmax(c))  
-print('Predicted: ', logreg.predict(val))
-print('Real: ', b)  
-    
-scores = np.zeros(8) 
-for i in range(len(classNames)):
-    w  = logreg.coef_[i,:]
-    a = w.dot(x)
-    scores[i] = a
-#    c = np.exp(a)/np.sum(np.exp(a))
-#    print(np.max(c))
-#scores -= np.max(scores)
-print('Guess: ',np.argmax(np.exp(scores)/np.sum(np.exp(scores))))
+# multiply x with weights
+temp = logreg.coef_ @ x.T
 
+# Compute the softmax
+e = np.exp(temp)
+theta = e / np.sum(e,0) # 
+
+# Make prediction
+myGuess = np.argmax(theta,0)
+
+#prediction = logreg.predict(x.reshape(1,-1))[0]
+prediction = logreg.predict(x)
+
+real_value = y_test[:]
+
+print('My guess: ',myGuess,'\nPrediction: ',prediction,'\nreal value: ',real_value)
 
 
