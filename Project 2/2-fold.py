@@ -41,10 +41,12 @@ if __name__ == '__main__':
     # Add offset attribute
     X = np.concatenate((np.ones((X.shape[0],1)),X),1)
 
+
     # Set attribute names and shape
     attributeNames = attributeNames[0:-1]
     attributeNames = [u'Offset']+attributeNames + [u'cp'] + [u'im'] + [u'imL'] + [u'imS'] + [u'imU'] + [u'om'] + [u'omL'] + [u'pp']
     M = X.shape[1]
+
 
     # Set cross-validation parameters
     K1 = 2
@@ -66,10 +68,10 @@ if __name__ == '__main__':
 
 
     # Initialize error and complexity control - ANN
-    L = 2  # Maximum number of hidden units
+    L = 5  # Maximum number of hidden units
     L_list = np.arange(1,L+1,1)
     errors_ANN = np.zeros((K1))
-    errors2_ANN = np.zeros((K2,L))
+    errors2_ANN = []
     s_ANN = np.zeros(K1)
     x_ANN = [0] * K1
 
@@ -79,6 +81,7 @@ if __name__ == '__main__':
     yhat = []
     y_true = []
     n = 0
+    ANN_min_errors = []
     for train_index, test_index in CV.split(X):
 
         # extract training and test set for current CV fold
@@ -90,7 +93,7 @@ if __name__ == '__main__':
         X_train_outer = torch.tensor(X[train_index,:], dtype=torch.float)
         y_train_outer = torch.tensor(y[train_index], dtype=torch.float)
         X_test_outer = torch.tensor(X[test_index,:], dtype=torch.float)
-        y_test_outer = torch.tensor(y[test_index], dtype=torch.uint8)
+        y_test_outer = torch.tensor(y[test_index], dtype=torch.float)
         
         
         i = 0
@@ -99,15 +102,16 @@ if __name__ == '__main__':
         test_error = np.empty((K1,len(lambdas)))
         y = y.squeeze()
 
+        
         for train_index2, test_index2 in CV2.split(X_train_outer):
             print('Crossvalidation fold: {0}/{1}'.format(n+1,i+1))    
             
-
+            ANN_errors = []
             # Extract training and test set for current CV fold, convert to tensors
             X_train2 = torch.tensor(X[train_index2,:], dtype=torch.float)
             y_train2 = torch.tensor(y[train_index2], dtype=torch.float)
             X_test2 = torch.tensor(X[test_index2,:], dtype=torch.float)
-            y_test2 = torch.tensor(y[test_index2], dtype=torch.uint8)
+            y_test2 = torch.tensor(y[test_index2], dtype=torch.float)
         
             # ANN
             # Fit classifier and classify the test points (consider 1 to 40 neighbors)
@@ -120,6 +124,7 @@ if __name__ == '__main__':
                         #torch.nn.ReLU(), 
                         torch.nn.Tanh(),   
                         torch.nn.Linear(n_hidden_units, 1), # H hidden units to 1 output neuron
+                        torch.nn.Sigmoid()
                         )
                 loss_fn = torch.nn.MSELoss()
 
@@ -128,15 +133,34 @@ if __name__ == '__main__':
                                                                X=X_train2,
                                                                y=y_train2,
                                                                n_replicates=1,
-                                                               max_iter=max_iter)
+                                                               max_iter=max_iter,
+                                                               tolerance = 1e-12)
+                
                 y_test_est = net(X_test2)
+                y_test_est = y_test_est.reshape(-1)
+                print("y_test_est")
+                print(y_test_est)
+                exit()
+                #y_test_est_vals = [entry[0] for entry in y_test_est.data.numpy()]
+
+        
 
                 # Determine errors 
+                e = (y_test_est.float() - y_test2.float())**2
+                print(e.shape)
+
                 se = (y_test_est.float()-y_test2.float())**2 # squared error
                 mse = (sum(se).type(torch.float)/len(y_test2)).data.numpy() #mean
+                print("Hidden Layers : {0} \n MSE VALS : {1}".format(h, mse)) 
                 #errors2_ANN[i,h-1] = mse # store error rate for current CV fold 
+                ANN_errors.append(mse)
                 #save the net for the lowest mse -> 
-                
+              
+            print("Errors from ANN: {0}\nNumber of units: {1}".format(ANN_errors, range(1,L+1)))
+            ANN_errors = np.array(ANN_errors)
+            min_arg = np.argmin(ANN_errors)
+            ANN_min_errors.append([min_arg + 1, ANN_errors[min_arg]])
+            print(ANN_min_errors)
             X_train_lin_in = X[train_index2,:]
             y_train_lin_in = y[train_index2]
             X_test_lin_in = X[test_index2,:]
@@ -162,10 +186,10 @@ if __name__ == '__main__':
 
             i+=1
         
-        
-        # KNN
+        ANN_errors = np.array(ANN_errors)
+        # ANN
         # Find which element corresponds to the smallest error
-        minArg = np.argmin(errors2_ANN.mean(0))
+        minArg = np.argmin(ANN_errors.mean(0))
         s_ANN[n] = minArg+1
         x_ANN[n] = L_list[minArg]
         
@@ -202,9 +226,14 @@ if __name__ == '__main__':
         lambdaI = lambdas[minArg] * np.eye(M)
         lambdaI[0,0] = 0 # remove bias regularization 
         w_outer = np.linalg.solve(XtX+lambdaI,Xty).squeeze()
+
+        print("##########")
+        print(w_outer)
+        y_est_LIN = w_outer @ X_train_lin.T
+        print(y_est_LIN)
         # Evaluate training and test performance
-        # train_error_outer = np.power(y_train_lin-X_train_lin @ w.T,2).mean(axis=0)
-        # test_error_outer = np.power(y_test_lin-X_test_lin @ w.T,2).mean(axis=0)
+        train_error_outer = np.power(y_train_lin-X_train_lin @ w_outer.T,2).mean(axis=0)
+        test_error_outer = np.power(y_test_lin-X_test_lin @ w_outer.T,2).mean(axis=0)
 
         # opt_val_err = np.min(np.mean(test_error_outer,axis=0))
         opt_lambda = lambdas[minArg]
@@ -216,11 +245,22 @@ if __name__ == '__main__':
         
         # Combine all predictions in array
         dy = []
-        print(y_est_BASE)
+        print("BASE mean prediction")
+        print(y_est_BASE[0])
+        print("ANN estimation")
         print([entry[0] for entry in y_est_ANN.data.numpy()])
+        print("Regression values")
+        print(y_est_LIN)
+        print("actual values")
         print(y_test_lin)
+
+        # Mean estimator
         dy.append(y_est_BASE)
+
+        # Predictions from the NN
         dy.append([entry[0] for entry in y_est_ANN.data.numpy()])
+
+        # Predictions from the linear regression
         #dy.append(y_est_LIN)
         #dy.append(1)
         dy = np.stack(dy, axis=1)
@@ -248,8 +288,8 @@ if __name__ == '__main__':
     f = figure(dpi=dpi)
 
     subplot(2, 1, 1)
-    plot(L_list,errors2_ANN.mean(0)*100,'-o')
-    xlabel('Number of neighbors')
+    plot(L_list, ANN_errors.mean(0)*100,'-o')
+    xlabel('Number of hidden units')
     ylabel('Classification error rate (%)')
 
     subplot(2, 1, 2)
