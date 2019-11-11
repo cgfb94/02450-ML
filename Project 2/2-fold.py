@@ -171,6 +171,7 @@ if __name__ == '__main__':
         
         # Compute the best ANN from the inner fold
         n_hidden_units = L_list[minArg]
+
         model = lambda: torch.nn.Sequential(
                 torch.nn.Linear(M, n_hidden_units), #M features to H hiden units
                 # 1st transfer function, either Tanh or ReLU:
@@ -202,27 +203,26 @@ if __name__ == '__main__':
         lambdaI[0,0] = 0 # remove bias regularization 
         w_outer = np.linalg.solve(XtX+lambdaI,Xty).squeeze()
         # Evaluate training and test performance
-        train_error_outer = np.power(y_train_lin-X_train_lin @ w.T,2).mean(axis=0)
-        test_error_outer = np.power(y_test_lin-X_test_lin @ w.T,2).mean(axis=0)
+        # train_error_outer = np.power(y_train_lin-X_train_lin @ w.T,2).mean(axis=0)
+        # test_error_outer = np.power(y_test_lin-X_test_lin @ w.T,2).mean(axis=0)
 
-        opt_val_err = np.min(np.mean(test_error_outer,axis=0))
+        # opt_val_err = np.min(np.mean(test_error_outer,axis=0))
         opt_lambda = lambdas[minArg]
-        train_err_vs_lambda = np.mean(train_error_outer,axis=0)
-        test_err_vs_lambda = np.mean(test_error_outer,axis=0)
-        mean_w_vs_lambda = np.squeeze(np.mean(w,axis=1))
 
         # BASELINE
-        print(y_train_outer)
         baseline_guess = np.mean(y_train_lin, axis=0)
         y_est_BASE = np.ones((y_test_lin.shape[0]), dtype = int)*baseline_guess
         errors_baseline[n] = np.sum(y_est_BASE != y_test_lin) / float(len(y_test_lin))
         
         # Combine all predictions in array
         dy = []
+        print(y_est_BASE)
+        print([entry[0] for entry in y_est_ANN.data.numpy()])
+        print(y_test_lin)
         dy.append(y_est_BASE)
-        dy.append(y_est_ANN)
+        dy.append([entry[0] for entry in y_est_ANN.data.numpy()])
         #dy.append(y_est_LIN)
-        dy.append(1)
+        #dy.append(1)
         dy = np.stack(dy, axis=1)
         yhat.append(dy)
         
@@ -235,9 +235,9 @@ if __name__ == '__main__':
     yhat = np.concatenate(yhat)
 
 
-    print('Errors KNN:\tErrors baseline\tErrors LOGREG')
-    for m in range(K1):   
-        print(' ',np.round(errors_ANN[m],2),'\t\t',np.round(errors_baseline[m],2),'\t\t',np.round(error_LOG[m],2))
+    # print('Errors KNN:\tErrors baseline\tErrors LOGREG')
+    # for m in range(K1):   
+    #     print(' ',np.round(errors_ANN[m],2),'\t\t',np.round(errors_baseline[m],2),'\t\t',np.round(error_LOG[m],2))
         
         
     # PLOTS 
