@@ -1,19 +1,25 @@
-from matplotlib.pyplot import figure, plot, xlabel, ylabel, show, subplot, semilogx, title, grid, legend, suptitle, tight_layout
+from matplotlib.pyplot import figure, plot, xlabel, ylabel, show, subplot, semilogx, title, grid, legend, suptitle, tight_layout, boxplot
 import numpy as np
+import pandas as pd
 from scipy.io import loadmat
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import model_selection
 from sklearn.linear_model import LogisticRegression
 from toolbox_02450 import mcnemar
+import seaborn as sns
+
 
 # Gets data
 from read_ecoli_data import *
+
+# Standardizes data matrix so each column has mean 0 and std 1
+X = (X - np.ones((N,1))*X.mean(0))/X.std(0)
 
 # Set cross-validation parameters
 K1 = 10
 K2 = K1
 CV = model_selection.KFold(n_splits=K1,shuffle=True, random_state = 1)
-CV2 = model_selection.KFold(n_splits=K2,shuffle=True, random_state =1)
+CV2 = model_selection.KFold(n_splits=K2,shuffle=True, random_state = 1)
 
 
 # Initialize error and complexity control - LOGREG
@@ -150,8 +156,18 @@ xlabel('Regularization strength, $\log_{10}(\lambda)$')
 ylabel('Classification error rate (%)')
 
 tight_layout()
-show()
 f.savefig('./figures/inner_fold_classification.png', bbox_inches='tight') if save_plots else 0
+
+
+f1 = figure(dpi=dpi)
+boxes = [errors_KNN,error_LOG,errors_baseline,]
+boxes_df = pd.DataFrame(boxes).T
+boxes_df.columns = ['KNN', 'Logistic Regression', 'Baseline']
+sns.boxplot(data = boxes_df,palette="Set3")
+ylabel('Generalization Error')
+f1.savefig('./figures/boxplot_classification.png', bbox_inches='tight') if save_plots else 0
+
+show()
 
 #%% Statistical evaluation Setup I
     
