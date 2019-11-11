@@ -186,11 +186,11 @@ if __name__ == '__main__':
                                                         y=y_train_outer,
                                                         n_replicates=1,
                                                         max_iter=max_iter)
-        y_test_est = net(X_test_outer)
+        y_est_ANN = net(X_test_outer)
 
         # Determine errors 
-        se = (y_test_est.float()-y_test2.float())**2 # squared error
-        mse = (sum(se).type(torch.float)/len(y_test2)).data.numpy() #mean
+        se = (y_est_ANN.float()-y_test_outer.float())**2 # squared error
+        mse = (sum(se).type(torch.float)/len(y_test_outer)).data.numpy() #mean
         #errors2_ANN[i,h-1] = mse # store error rate for current CV fold 
         #save the net for the lowest mse -> 
         
@@ -198,22 +198,31 @@ if __name__ == '__main__':
         # Compute lienar regression with best lambda from inner fold #TODO
         minArg = np.argmin(np.mean(test_error,axis=0))
 
-        opt_val_err = np.min(np.mean(test_error,axis=0))
+        lambdaI = lambdas[minArg] * np.eye(M)
+        lambdaI[0,0] = 0 # remove bias regularization 
+        w_outer = np.linalg.solve(XtX+lambdaI,Xty).squeeze()
+        # Evaluate training and test performance
+        train_error_outer = np.power(y_train_lin-X_train_lin @ w.T,2).mean(axis=0)
+        test_error_outer = np.power(y_test_lin-X_test_lin @ w.T,2).mean(axis=0)
+
+        opt_val_err = np.min(np.mean(test_error_outer,axis=0))
         opt_lambda = lambdas[minArg]
-        train_err_vs_lambda = np.mean(train_error,axis=0)
-        test_err_vs_lambda = np.mean(test_error,axis=0)
+        train_err_vs_lambda = np.mean(train_error_outer,axis=0)
+        test_err_vs_lambda = np.mean(test_error_outer,axis=0)
         mean_w_vs_lambda = np.squeeze(np.mean(w,axis=1))
 
         # BASELINE
-        baseline_guess = np.mean(y_train_outer, axis=0)
-        y_est_BASE = np.ones((y_test_outer.shape[0]), dtype = int)*baseline_guess
-        errors_baseline[n] = np.sum(y_est_BASE != y_test_outer) / float(len(y_test_outer))
+        print(y_train_outer)
+        baseline_guess = np.mean(y_train_lin, axis=0)
+        y_est_BASE = np.ones((y_test_lin.shape[0]), dtype = int)*baseline_guess
+        errors_baseline[n] = np.sum(y_est_BASE != y_test_lin) / float(len(y_test_lin))
         
         # Combine all predictions in array
         dy = []
         dy.append(y_est_BASE)
         dy.append(y_est_ANN)
-        dy.append(y_est_LIN)
+        #dy.append(y_est_LIN)
+        dy.append(1)
         dy = np.stack(dy, axis=1)
         yhat.append(dy)
         
