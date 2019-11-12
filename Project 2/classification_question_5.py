@@ -16,7 +16,6 @@ X = (X - np.ones((N,1))*X.mean(0))/X.std(0)
 # Mean op optimal lambda found from last exercise
 lambda_opt = 1.29
 
-
 #K = 10
 #CV = model_selection.KFold(n_splits=K,shuffle=True, random_state = 1)
 #for train_index, test_index in CV.split(X):
@@ -70,6 +69,5 @@ prediction = logreg.predict(x)
 
 real_value = y_test[:]
 
+print('\nManual check for model predictions:\n')
 print('My guess: ',myGuess,'\nPrediction: ',prediction,'\nreal value: ',real_value)
-
-

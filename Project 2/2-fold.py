@@ -1,5 +1,6 @@
 from matplotlib.pyplot import figure, plot, xlabel, ylabel, show, subplot, semilogx, title, grid, legend, suptitle, tight_layout
 import numpy as np
+import pandas as pd
 from scipy.io import loadmat
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn import model_selection
@@ -49,7 +50,7 @@ if __name__ == '__main__':
 
 
     # Set cross-validation parameters
-    K1 = 2
+    K1 = 5
     K2 = K1
     CV = model_selection.KFold(n_splits=K1,shuffle=True, random_state = 1)
     CV2 = model_selection.KFold(n_splits=K2,shuffle=True, random_state = 1)
@@ -68,10 +69,10 @@ if __name__ == '__main__':
 
 
     # Initialize error and complexity control - ANN
-    L = 5  # Maximum number of hidden units
+    L = 4  # Maximum number of hidden units
     L_list = np.arange(1,L+1,1)
     errors_ANN = np.zeros((K1))
-    errors2_ANN = []
+    errors2_ANN = np.zeros((K2,L))
     s_ANN = np.zeros(K1)
     x_ANN = [0] * K1
 
@@ -90,27 +91,25 @@ if __name__ == '__main__':
         X_test_lin = X[test_index,:]
         y_test_lin = y[test_index]
 
-        X_train_outer = torch.tensor(X[train_index,:], dtype=torch.float)
+        X_train_outer = torch.tensor(X[train_index,1:], dtype=torch.float)
         y_train_outer = torch.tensor(y[train_index], dtype=torch.float)
-        X_test_outer = torch.tensor(X[test_index,:], dtype=torch.float)
+        X_test_outer = torch.tensor(X[test_index,1:], dtype=torch.float)
         y_test_outer = torch.tensor(y[test_index], dtype=torch.float)
         
         
         i = 0
-        w = np.empty((M,K1,len(lambdas)))
-        train_error = np.empty((K1,len(lambdas)))
-        test_error = np.empty((K1,len(lambdas)))
-        y = y.squeeze()
+        w = np.empty((M,K2,len(lambdas))) # Changed from K1 to K2
+#        y = y.squeeze()
 
         
-        for train_index2, test_index2 in CV2.split(X_train_outer):
+        for train_index2, test_index2 in CV2.split(X_train_lin):
             print('Crossvalidation fold: {0}/{1}'.format(n+1,i+1))    
             
             ANN_errors = []
             # Extract training and test set for current CV fold, convert to tensors
-            X_train2 = torch.tensor(X[train_index2,:], dtype=torch.float)
+            X_train2 = torch.tensor(X[train_index2,1:], dtype=torch.float)
             y_train2 = torch.tensor(y[train_index2], dtype=torch.float)
-            X_test2 = torch.tensor(X[test_index2,:], dtype=torch.float)
+            X_test2 = torch.tensor(X[test_index2,1:], dtype=torch.float)
             y_test2 = torch.tensor(y[test_index2], dtype=torch.float)
         
             # ANN
@@ -119,13 +118,14 @@ if __name__ == '__main__':
 
                 n_hidden_units = h
                 model = lambda: torch.nn.Sequential(
-                        torch.nn.Linear(M, n_hidden_units), #M features to H hiden units
+                        torch.nn.Linear(M-1, n_hidden_units), #M features to H hiden units
                         # 1st transfer function, either Tanh or ReLU:
                         #torch.nn.ReLU(), 
                         torch.nn.Tanh(),   
                         torch.nn.Linear(n_hidden_units, 1), # H hidden units to 1 output neuron
-                        torch.nn.Sigmoid()
                         )
+                
+                
                 loss_fn = torch.nn.MSELoss()
 
                 net, final_loss, learning_curve = train_neural_net(model,
@@ -138,58 +138,42 @@ if __name__ == '__main__':
                 
                 y_test_est = net(X_test2)
                 y_test_est = y_test_est.reshape(-1)
-                print("y_test_est")
-                print(y_test_est)
-                exit()
-                #y_test_est_vals = [entry[0] for entry in y_test_est.data.numpy()]
-
-        
-
-                # Determine errors 
-                e = (y_test_est.float() - y_test2.float())**2
-                print(e.shape)
 
                 se = (y_test_est.float()-y_test2.float())**2 # squared error
                 mse = (sum(se).type(torch.float)/len(y_test2)).data.numpy() #mean
-                print("Hidden Layers : {0} \n MSE VALS : {1}".format(h, mse)) 
-                #errors2_ANN[i,h-1] = mse # store error rate for current CV fold 
-                ANN_errors.append(mse)
-                #save the net for the lowest mse -> 
-              
-            print("Errors from ANN: {0}\nNumber of units: {1}".format(ANN_errors, range(1,L+1)))
-            ANN_errors = np.array(ANN_errors)
-            min_arg = np.argmin(ANN_errors)
-            ANN_min_errors.append([min_arg + 1, ANN_errors[min_arg]])
-            print(ANN_min_errors)
+                
+                # Set error matrix
+                errors2_ANN[i,h-1] = mse
+                
+            
+            
             X_train_lin_in = X[train_index2,:]
             y_train_lin_in = y[train_index2]
             X_test_lin_in = X[test_index2,:]
             y_test_lin_in = y[test_index2]
                 
                 
-            # LINEAR REGRESSION   #TODO: 
+            # LINEAR REGRESSION 
 
             # precompute terms
             Xty = X_train_lin_in.T @ y_train_lin_in
-            XtX = X_test_lin_in.T @ X_test_lin_in
+            XtX = X_train_lin_in.T @ X_train_lin_in
         
-            k = 0
             for l in range(0,L_LIN):
                 # Compute parameters for current value of lambda and current CV fold
                 lambdaI = lambdas[l] * np.eye(M)
                 lambdaI[0,0] = 0 # remove bias regularization 
                 w[:,i,l] = np.linalg.solve(XtX+lambdaI,Xty).squeeze()
                 # Evaluate training and test performance
-                train_error[i,l] = np.power(y_train_lin_in-X_train_lin_in @ w[:,i,l].T,2).mean(axis=0)
-                test_error[i,l] = np.power(y_test_lin_in-X_test_lin_in @ w[:,i,l].T,2).mean(axis=0)
-                k += 1
+                y_est2_lin = X_test_lin_in @ w[:,i,l].T
+                error2_LIN[i,l] = np.power(y_test_lin_in-y_est2_lin,2).mean(axis=0)
 
-            i+=1
+            i+=1       
         
-        ANN_errors = np.array(ANN_errors)
         # ANN
         # Find which element corresponds to the smallest error
-        minArg = np.argmin(ANN_errors.mean(0))
+
+        minArg = np.argmin(errors2_ANN.mean(0))
         s_ANN[n] = minArg+1
         x_ANN[n] = L_list[minArg]
         
@@ -197,7 +181,7 @@ if __name__ == '__main__':
         n_hidden_units = L_list[minArg]
 
         model = lambda: torch.nn.Sequential(
-                torch.nn.Linear(M, n_hidden_units), #M features to H hiden units
+                torch.nn.Linear(M-1, n_hidden_units), #M features to H hiden units
                 # 1st transfer function, either Tanh or ReLU:
                 #torch.nn.ReLU(), 
                 torch.nn.Tanh(),   
@@ -212,61 +196,50 @@ if __name__ == '__main__':
                                                         n_replicates=1,
                                                         max_iter=max_iter)
         y_est_ANN = net(X_test_outer)
+        y_est_ANN = y_est_ANN.reshape(-1)
 
         # Determine errors 
         se = (y_est_ANN.float()-y_test_outer.float())**2 # squared error
         mse = (sum(se).type(torch.float)/len(y_test_outer)).data.numpy() #mean
-        #errors2_ANN[i,h-1] = mse # store error rate for current CV fold 
-        #save the net for the lowest mse -> 
         
-        
-        # Compute lienar regression with best lambda from inner fold #TODO
-        minArg = np.argmin(np.mean(test_error,axis=0))
+        errors_ANN[n] = mse
 
+
+        # LINEAR MODEL
+        
+        # precompute terms
+        Xty = X_train_lin.T @ y_train_lin
+        XtX = X_train_lin.T @ X_train_lin
+        
+        # Compute lienar regression with best lambda from inner fold        
+        minArg = np.argmin(np.mean(error2_LIN,axis=0))
+        opt_lambda[n] = lambdas[minArg]
+        
         lambdaI = lambdas[minArg] * np.eye(M)
         lambdaI[0,0] = 0 # remove bias regularization 
         w_outer = np.linalg.solve(XtX+lambdaI,Xty).squeeze()
-
-        print("##########")
-        print(w_outer)
-        y_est_LIN = w_outer @ X_train_lin.T
-        print(y_est_LIN)
-        # Evaluate training and test performance
-        train_error_outer = np.power(y_train_lin-X_train_lin @ w_outer.T,2).mean(axis=0)
-        test_error_outer = np.power(y_test_lin-X_test_lin @ w_outer.T,2).mean(axis=0)
-
-        # opt_val_err = np.min(np.mean(test_error_outer,axis=0))
-        opt_lambda = lambdas[minArg]
-
-        # BASELINE
-        baseline_guess = np.mean(y_train_lin, axis=0)
-        y_est_BASE = np.ones((y_test_lin.shape[0]), dtype = int)*baseline_guess
-        errors_baseline[n] = np.sum(y_est_BASE != y_test_lin) / float(len(y_test_lin))
         
-        # Combine all predictions in array
+        # Evaluate training and test performance
+        y_est_lin = X_test_lin @ w_outer.T
+        error_LIN[n] = np.power(y_test_lin-y_est_lin,2).mean(axis=0)
+
+#        # BASELINE
+        y_est_BASE = np.ones(y_test_lin.shape)*y_test_lin.mean()
+        errors_baseline[n] = np.mean((y_est_BASE-y_test_lin)**2)
+
+#        baseline_guess = np.mean(y_train_lin, axis=0)
+#        y_est_BASE = np.ones((y_test_lin.shape[0]), dtype = int)*baseline_guess
+#        errors_baseline[n] = np.sum(y_est_BASE != y_test_lin) / float(len(y_test_lin))
+#        
+#        # Combine all predictions in array
         dy = []
-        print("BASE mean prediction")
-        print(y_est_BASE[0])
-        print("ANN estimation")
-        print([entry[0] for entry in y_est_ANN.data.numpy()])
-        print("Regression values")
-        print(y_est_LIN)
-        print("actual values")
-        print(y_test_lin)
-
-        # Mean estimator
         dy.append(y_est_BASE)
-
-        # Predictions from the NN
-        dy.append([entry[0] for entry in y_est_ANN.data.numpy()])
-
-        # Predictions from the linear regression
-        #dy.append(y_est_LIN)
-        #dy.append(1)
+        dy.append(y_est_lin)
+        dy.append(y_est_ANN.data.numpy())
         dy = np.stack(dy, axis=1)
         yhat.append(dy)
         
-        y_true.append(y_test_outer)
+        y_true.append(y_test_lin)
         n+=1
     
         
@@ -275,48 +248,110 @@ if __name__ == '__main__':
     yhat = np.concatenate(yhat)
 
 
-    # print('Errors KNN:\tErrors baseline\tErrors LOGREG')
-    # for m in range(K1):   
-    #     print(' ',np.round(errors_ANN[m],2),'\t\t',np.round(errors_baseline[m],2),'\t\t',np.round(error_LOG[m],2))
+print('Errors ANN:\tErrors Baseline: \tErrors Linear')
+for m in range(K1):   
+    print(np.round(errors_ANN[m],3),'\t\t',np.round(errors_baseline[m],3),'\t\t',np.round(error_LIN[m],3))
         
         
-    # PLOTS 
-    dpi = 75 # Sets dpi for plots
-    save_plots = False
+   
+# PLOTS 
+dpi = 75 # Sets dpi for plots
+save_plots = False
 
-    # Plot the classification error rate for last inner fold for KNN
-    f = figure(dpi=dpi)
+# Plot results from last inner fold
+test_err_vs_lambda = np.mean(error2_LIN,axis=0)
+mean_w_vs_lambda = np.squeeze(np.mean(w,axis=1))
+    
+f = figure(dpi = dpi)
+subplot(2, 1, 1)
+title('Optimal lambda: {0}'.format(np.round(opt_lambda[i-1],3)))
+semilogx(lambdas,test_err_vs_lambda.T,'r.-')
+xlabel('Regularization factor')
+ylabel('Estimated generalization error')
+legend(['Validation error'])
+grid()
+tight_layout()
 
-    subplot(2, 1, 1)
-    plot(L_list, ANN_errors.mean(0)*100,'-o')
-    xlabel('Number of hidden units')
-    ylabel('Classification error rate (%)')
+subplot(2, 1, 2)
+title('ANN - inner crossvalidation')
+plot(L_list,errors2_ANN.mean(0))
+xlabel('Hidden nodes')
+ylabel('Estimated generalization error')
+legend(['Validation error'])
+grid()
+tight_layout()
 
-    subplot(2, 1, 2)
-    semilogx(lambda_interval, error2_LOG.mean(0)*100,'-or')
-    xlabel('Regularization strength, $\log_{10}(\lambda)$')
-    ylabel('Classification error rate (%)')
 
-    tight_layout()
-    show()
-    f.savefig('./figures/inner_fold_classification.png', bbox_inches='tight') if save_plots else 0
+show()
+f.savefig('./figures/inner_fold_regression.png', bbox_inches='tight') if save_plots else 0
 
-    #%% Statistical evaluation Setup I
+import seaborn as sns
+
+f1 = figure(dpi=dpi)
+boxes = [errors_ANN,errors_baseline,error_LIN,]
+boxes_df = pd.DataFrame(boxes).T
+boxes_df.columns = ['ANN', 'Baseline', 'Linear Regression']
+sns.boxplot(data = boxes_df,palette="Set3")
+ylabel('Generalization Error')
+f1.savefig('./figures/boxplot_regression.png', bbox_inches='tight') if save_plots else 0
+
+#%% Statistical evaluation Setup I
+import numpy as np, scipy.stats as st
+    
+alpha = 0.05
+
+print('A : Baseline\nB : LIN')
+yhatA = yhat[:,0]
+yhatB = yhat[:,1]
+# compute z with squared error.
+zA = np.abs(y_true - yhatA ) ** 2
+# Compute confidence interval of z = zA-zB and p-value of Null hypothesis
+zB = np.abs(y_true - yhatB ) ** 2
+z = zA - zB
+CI = st.t.interval(1-alpha, len(z)-1, loc=np.mean(z), scale=st.sem(z))  # Confidence interval
+p = st.t.cdf( -np.abs( np.mean(z) )/st.sem(z), df=len(z)-1)  # p-value
+print('CI: ',np.round(CI,2),' p: ',p)
+print('')
+
+print('A : Baseline\nB : ANN')
+yhatA = yhat[:,0]
+yhatB = yhat[:,2]
+# compute z with squared error.
+zA = np.abs(y_true - yhatA ) ** 2
+# Compute confidence interval of z = zA-zB and p-value of Null hypothesis
+zB = np.abs(y_true - yhatB ) ** 2
+z = zA - zB
+CI = st.t.interval(1-alpha, len(z)-1, loc=np.mean(z), scale=st.sem(z))  # Confidence interval
+p = st.t.cdf( -np.abs( np.mean(z) )/st.sem(z), df=len(z)-1)  # p-value
+print('CI: ',np.round(CI,2),' p: ',p)
+print('')
+
+print('A : LIN\nB : ANN')
+yhatA = yhat[:,1]
+yhatB = yhat[:,2]
+# compute z with squared error.
+zA = np.abs(y_true - yhatA ) ** 2
+# Compute confidence interval of z = zA-zB and p-value of Null hypothesis
+zB = np.abs(y_true - yhatB ) ** 2
+z = zA - zB
+CI = st.t.interval(1-alpha, len(z)-1, loc=np.mean(z), scale=st.sem(z))  # Confidence interval
+p = st.t.cdf( -np.abs( np.mean(z) )/st.sem(z), df=len(z)-1)  # p-value
+print('CI: ',np.round(CI,2),' p: ',p)
         
-    alpha = 0.05
 
-
-    print('A : Baseline\nB : ANN')
-    [thetahat, CI, p] = mcnemar(y_true, yhat[:,0], yhat[:,1], alpha=alpha)
-    print('theta: ',np.round(thetahat,2),' CI: ',np.round(CI,2),' p: ',np.round(p,3))
-    print('\n')
-    print('A : Baseline\nB : Logistical Regression')
-    [thetahat, CI, p] = mcnemar(y_true, yhat[:,0], yhat[:,2], alpha=alpha)
-    print('theta: ',np.round(thetahat,2),' CI: ',np.round(CI,2),' p: ',np.round(p,3))
-    print('\n')
-    print('A : KNN\nB : Logistical Regression')
-    [thetahat, CI, p] = mcnemar(y_true, yhat[:,1], yhat[:,2], alpha=alpha)
-    print('theta: ',np.round(thetahat,2),' CI: ',np.round(CI,2),' p: ',np.round(p,3))
+#
+#
+#    print('A : Baseline\nB : ANN')
+#    [thetahat, CI, p] = mcnemar(y_true, yhat[:,0], yhat[:,1], alpha=alpha)
+#    print('theta: ',np.round(thetahat,2),' CI: ',np.round(CI,2),' p: ',np.round(p,3))
+#    print('\n')
+#    print('A : Baseline\nB : Logistical Regression')
+#    [thetahat, CI, p] = mcnemar(y_true, yhat[:,0], yhat[:,2], alpha=alpha)
+#    print('theta: ',np.round(thetahat,2),' CI: ',np.round(CI,2),' p: ',np.round(p,3))
+#    print('\n')
+#    print('A : KNN\nB : Logistical Regression')
+#    [thetahat, CI, p] = mcnemar(y_true, yhat[:,1], yhat[:,2], alpha=alpha)
+#    print('theta: ',np.round(thetahat,2),' CI: ',np.round(CI,2),' p: ',np.round(p,3))
 
 
     #print("\ntheta = theta_A-theta_B point estimate", thetahat, " CI: ", CI, "p-value", p)

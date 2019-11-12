@@ -40,6 +40,7 @@ CV = model_selection.KFold(K, shuffle=True,random_state = 1)
 # Values of lambda
 lambdas = np.power(10.,range(-1,7))
 lambdas = np.logspace(-2, 7, 50)
+#lambdas = np.power(10.,range(-18,7))
 #lambdas = np.arange(0.1,100,0.5)
 
 # Initialize data
@@ -74,7 +75,7 @@ for train_index, test_index in CV.split(X,y):
     k=k+1
     
 minArg = np.argmin(np.mean(test_error,axis=0))
-
+k
 opt_val_err = np.min(np.mean(test_error,axis=0))
 opt_lambda = lambdas[minArg]
 train_err_vs_lambda = np.mean(train_error,axis=0)
